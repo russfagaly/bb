@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Majors Little League Pitching Leaderboards</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .leaderboard-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .leaderboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .category-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table th {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .leaderboard-table td {
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+        
+        .leaderboard-table tr:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .rank {
+            font-weight: bold;
+            color: #ffd700;
+            width: 30px;
+        }
+        
+        .rank-1 { color: #ffd700; font-size: 1.1rem; }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+        
+        .player-name {
+            font-weight: 600;
+        }
+        
+        .team {
+            color: #cccccc;
+            font-size: 0.85rem;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            text-align: right;
+        }
+        
+        .era-note {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #cccccc;
+            font-style: italic;
+        }
+        
+        .toggle-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn:hover,
+        .toggle-btn.active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .update-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚾ 2025 Majors Little League Pitching Leaderboards <span class="update-badge">STRIKE %</span></h1>
+        
+        <div class="toggle-container">
+            <button class="toggle-btn active" onclick="showAllCategories()">Show All Categories</button>
+            <button class="toggle-btn" onclick="showTopCategories()">Show Top 6 Categories</button>
+        </div>
+        
+        <div id="leaderboards" class="leaderboard-grid">
+            <!-- Leaderboards will be populated by JavaScript -->
+        </div>
+        
+        <div class="era-note">
+            * ERA qualified pitchers must have pitched at least 6 innings (18 outs)<br>
+            * Little League ERA calculated as (Earned Runs × 6) ÷ Innings Pitched<br>
+            * Complete Games require 18+ outs pitched in a single game (6 full innings)<br>
+            * Strike % = (Strikes ÷ Total Pitches) × 100
+        </div>
+    </div>
+
+    <script>
+        // Calculate strike percentage for each player
+        function calculateStrikePercent(strikes, totalPitches) {
+            return totalPitches > 0 ? (strikes / totalPitches * 100) : 0;
+        }
+
+        // Real player statistics from your actual Excel spreadsheet
+        function getStaticPlayerData() {
+            const rawData = [
+                {"player":"Jonjon S","team":"Orioles","games":20,"totalOuts":156,"hits":73,"runs":50,"earnedRuns":32,"walks":22,"strikeouts":70,"wildPitches":8,"hitByPitch":4,"totalPitches":906,"strikes":594,"battersFaced":308,"completeGames":2,"innings":52,"era":3.69},
+                {"player":"Jaxon M","team":"Cubs","games":19,"totalOuts":153,"hits":35,"runs":22,"earnedRuns":12,"walks":20,"strikeouts":92,"wildPitches":4,"hitByPitch":4,"totalPitches":761,"strikes":491,"battersFaced":224,"completeGames":2,"innings":51,"era":1.41},
+                {"player":"Kenzo W","team":"Brewers","games":17,"totalOuts":145,"hits":44,"runs":18,"earnedRuns":12,"walks":10,"strikeouts":101,"wildPitches":2,"hitByPitch":0,"totalPitches":780,"strikes":553,"battersFaced":209,"completeGames":0,"innings":48.33,"era":1.49},
+                {"player":"Bernardo C","team":"Giants","games":15,"totalOuts":116,"hits":15,"runs":13,"earnedRuns":11,"walks":26,"strikeouts":93,"wildPitches":1,"hitByPitch":2,"totalPitches":728,"strikes":434,"battersFaced":164,"completeGames":1,"innings":38.67,"era":1.71},
+                {"player":"Roland M","team":"Braves","games":18,"totalOuts":132,"hits":68,"runs":56,"earnedRuns":31,"walks":11,"strikeouts":48,"wildPitches":7,"hitByPitch":1,"totalPitches":701,"strikes":475,"battersFaced":272,"completeGames":3,"innings":44,"era":4.23},
+                {"player":"Cade T","team":"Braves","games":13,"totalOuts":98,"hits":36,"runs":27,"earnedRuns":21,"walks":14,"strikeouts":55,"wildPitches":2,"hitByPitch":1,"totalPitches":661,"strikes":324,"battersFaced":165,"completeGames":1,"innings":32.67,"era":3.86},
+                {"player":"Charlie V","team":"Cubs","games":14,"totalOuts":96,"hits":39,"runs":29,"earnedRuns":32,"walks":19,"strikeouts":51,"wildPitches":4,"hitByPitch":2,"totalPitches":649,"strikes":312,"battersFaced":178,"completeGames":1,"innings":32,"era":6},
+                {"player":"Dhilan G","team":"Brewers","games":18,"totalOuts":105,"hits":58,"runs":34,"earnedRuns":25,"walks":20,"strikeouts":54,"wildPitches":3,"hitByPitch":1,"totalPitches":639,"strikes":331,"battersFaced":214,"completeGames":0,"innings":35,"era":4.29},
+                {"player":"Josh M","team":"Padres","games":13,"totalOuts":115,"hits":45,"runs":38,"earnedRuns":33,"walks":24,"strikeouts":54,"wildPitches":5,"hitByPitch":0,"totalPitches":634,"strikes":387,"battersFaced":226,"completeGames":2,"innings":38.33,"era":5.17},
+                {"player":"Jack Bliss","team":"Orioles","games":13,"totalOuts":95,"hits":65,"runs":40,"earnedRuns":24,"walks":18,"strikeouts":29,"wildPitches":5,"hitByPitch":1,"totalPitches":612,"strikes":268,"battersFaced":210,"completeGames":0,"innings":31.67,"era":4.55},
+                {"player":"Matthew O","team":"Rangers","games":14,"totalOuts":112,"hits":46,"runs":29,"earnedRuns":30,"walks":20,"strikeouts":57,"wildPitches":3,"hitByPitch":0,"totalPitches":610,"strikes":344,"battersFaced":210,"completeGames":0,"innings":37.33,"era":4.82},
+                {"player":"Jack Bliss","team":"Orioles","games":13,"totalOuts":95,"hits":65,"runs":40,"earnedRuns":24,"walks":18,"strikeouts":29,"wildPitches":5,"hitByPitch":1,"totalPitches":468,"strikes":268,"battersFaced":210,"completeGames":0,"innings":31.67,"era":4.55},
+                {"player":"Zachary L","team":"Dodgers","games":12,"totalOuts":86,"hits":24,"runs":17,"earnedRuns":14,"walks":7,"strikeouts":60,"wildPitches":1,"hitByPitch":0,"totalPitches":406,"strikes":293,"battersFaced":137,"completeGames":1,"innings":28.67,"era":2.93},
+                {"player":"Jonathan M","team":"Dodgers","games":10,"totalOuts":78,"hits":18,"runs":10,"earnedRuns":10,"walks":8,"strikeouts":42,"wildPitches":1,"hitByPitch":0,"totalPitches":366,"strikes":261,"battersFaced":124,"completeGames":0,"innings":26,"era":2.31},
+                {"player":"Adrien R","team":"Padres","games":9,"totalOuts":77,"hits":34,"runs":19,"earnedRuns":14,"walks":17,"strikeouts":31,"wildPitches":2,"hitByPitch":0,"totalPitches":387,"strikes":241,"battersFaced":152,"completeGames":1,"innings":25.67,"era":3.27},
+                {"player":"Jack Becker","team":"Rangers","games":8,"totalOuts":72,"hits":37,"runs":22,"earnedRuns":18,"walks":13,"strikeouts":28,"wildPitches":2,"hitByPitch":1,"totalPitches":338,"strikes":210,"battersFaced":146,"completeGames":0,"innings":24,"era":4.5},
+                {"player":"Nik J","team":"Giants","games":9,"totalOuts":72,"hits":29,"runs":17,"earnedRuns":12,"walks":12,"strikeouts":41,"wildPitches":1,"hitByPitch":0,"totalPitches":345,"strikes":234,"battersFaced":133,"completeGames":0,"innings":24,"era":3},
+                {"player":"Kobe I","team":"Dodgers","games":9,"totalOuts":67,"hits":30,"runs":19,"earnedRuns":16,"walks":15,"strikeouts":40,"wildPitches":2,"hitByPitch":0,"totalPitches":324,"strikes":217,"battersFaced":138,"completeGames":0,"innings":22.33,"era":4.31},
+                {"player":"Jordan C","team":"Rangers","games":7,"totalOuts":66,"hits":34,"runs":21,"earnedRuns":18,"walks":12,"strikeouts":17,"wildPitches":2,"hitByPitch":1,"totalPitches":312,"strikes":193,"battersFaced":133,"completeGames":0,"innings":22,"era":4.91},
+                {"player":"RJ F","team":"Padres","games":8,"totalOuts":59,"hits":32,"runs":19,"earnedRuns":14,"walks":15,"strikeouts":14,"wildPitches":6,"hitByPitch":2,"totalPitches":278,"strikes":168,"battersFaced":133,"completeGames":0,"innings":19.67,"era":4.27},
+                {"player":"Hudson P","team":"Yankees","games":6,"totalOuts":56,"hits":23,"runs":14,"earnedRuns":15,"walks":10,"strikeouts":13,"wildPitches":1,"hitByPitch":0,"totalPitches":261,"strikes":175,"battersFaced":116,"completeGames":0,"innings":18.67,"era":4.82},
+                {"player":"Zach B","team":"Giants","games":7,"totalOuts":55,"hits":9,"runs":5,"earnedRuns":3,"walks":7,"strikeouts":37,"wildPitches":1,"hitByPitch":0,"totalPitches":264,"strikes":181,"battersFaced":79,"completeGames":0,"innings":18.33,"era":0.98},
+                {"player":"Nova R","team":"Padres","games":8,"totalOuts":50,"hits":19,"runs":13,"earnedRuns":7,"walks":15,"strikeouts":22,"wildPitches":2,"hitByPitch":0,"totalPitches":245,"strikes":142,"battersFaced":97,"completeGames":0,"innings":16.67,"era":2.52},
+                {"player":"Lennon D","team":"Rangers","games":6,"totalOuts":49,"hits":34,"runs":20,"earnedRuns":15,"walks":8,"strikeouts":12,"wildPitches":2,"hitByPitch":1,"totalPitches":243,"strikes":151,"battersFaced":124,"completeGames":0,"innings":16.33,"era":5.51},
+                {"player":"Issa R","team":"Cubs","games":7,"totalOuts":46,"hits":18,"runs":8,"earnedRuns":6,"walks":8,"strikeouts":21,"wildPitches":1,"hitByPitch":0,"totalPitches":220,"strikes":149,"battersFaced":94,"completeGames":0,"innings":15.33,"era":2.35},
+                {"player":"Drew B","team":"Yankees","games":6,"totalOuts":45,"hits":16,"runs":9,"earnedRuns":4,"walks":9,"strikeouts":6,"wildPitches":1,"hitByPitch":0,"totalPitches":201,"strikes":127,"battersFaced":87,"completeGames":0,"innings":15,"era":1.6},
+                {"player":"Caleb N","team":"Braves","games":7,"totalOuts":44,"hits":25,"runs":15,"earnedRuns":11,"walks":8,"strikeouts":27,"wildPitches":1,"hitByPitch":0,"totalPitches":219,"strikes":142,"battersFaced":96,"completeGames":0,"innings":14.67,"era":4.5},
+                {"player":"Jonah L","team":"Orioles","games":8,"totalOuts":44,"hits":36,"runs":21,"earnedRuns":13,"walks":13,"strikeouts":16,"wildPitches":3,"hitByPitch":1,"totalPitches":232,"strikes":139,"battersFaced":109,"completeGames":0,"innings":14.67,"era":5.32},
+                {"player":"Abraham S","team":"Dodgers","games":6,"totalOuts":42,"hits":17,"runs":10,"earnedRuns":7,"walks":9,"strikeouts":29,"wildPitches":2,"hitByPitch":0,"totalPitches":204,"strikes":134,"battersFaced":90,"completeGames":0,"innings":14,"era":3},
+                {"player":"Lute B","team":"Yankees","games":7,"totalOuts":42,"hits":12,"runs":4,"earnedRuns":2,"walks":12,"strikeouts":24,"wildPitches":1,"hitByPitch":0,"totalPitches":203,"strikes":129,"battersFaced":83,"completeGames":0,"innings":14,"era":0.86},
+                {"player":"Cam T","team":"Yankees","games":5,"totalOuts":41,"hits":23,"runs":14,"earnedRuns":12,"walks":8,"strikeouts":24,"wildPitches":1,"hitByPitch":0,"totalPitches":192,"strikes":128,"battersFaced":96,"completeGames":0,"innings":13.67,"era":5.27},
+                {"player":"Mason S","team":"Dodgers","games":6,"totalOuts":40,"hits":20,"runs":12,"earnedRuns":8,"walks":9,"strikeouts":16,"wildPitches":1,"hitByPitch":0,"totalPitches":188,"strikes":117,"battersFaced":78,"completeGames":0,"innings":13.33,"era":3.6},
+                {"player":"Sam G","team":"Yankees","games":6,"totalOuts":39,"hits":18,"runs":11,"earnedRuns":8,"walks":9,"strikeouts":21,"wildPitches":2,"hitByPitch":0,"totalPitches":186,"strikes":117,"battersFaced":84,"completeGames":0,"innings":13,"era":3.69},
+                {"player":"Huston G","team":"Brewers","games":5,"totalOuts":37,"hits":17,"runs":10,"earnedRuns":8,"walks":8,"strikeouts":18,"wildPitches":1,"hitByPitch":0,"totalPitches":175,"strikes":114,"battersFaced":74,"completeGames":0,"innings":12.33,"era":3.89},
+                {"player":"Gio D","team":"Yankees","games":6,"totalOuts":35,"hits":23,"runs":16,"earnedRuns":11,"walks":7,"strikeouts":12,"wildPitches":1,"hitByPitch":1,"totalPitches":173,"strikes":103,"battersFaced":81,"completeGames":0,"innings":11.67,"era":5.66},
+                {"player":"Zachary C","team":"Giants","games":5,"totalOuts":34,"hits":11,"runs":6,"earnedRuns":5,"walks":7,"strikeouts":13,"wildPitches":1,"hitByPitch":0,"totalPitches":162,"strikes":108,"battersFaced":60,"completeGames":0,"innings":11.33,"era":2.65},
+                {"player":"Andrew W","team":"Braves","games":6,"totalOuts":32,"hits":17,"runs":12,"earnedRuns":9,"walks":8,"strikeouts":16,"wildPitches":1,"hitByPitch":0,"totalPitches":158,"strikes":97,"battersFaced":74,"completeGames":0,"innings":10.67,"era":5.06},
+                {"player":"Kaleo P","team":"Brewers","games":6,"totalOuts":31,"hits":34,"runs":22,"earnedRuns":16,"walks":14,"strikeouts":11,"wildPitches":6,"hitByPitch":2,"totalPitches":176,"strikes":94,"battersFaced":96,"completeGames":0,"innings":10.33,"era":9.29},
+                {"player":"Miles M","team":"Brewers","games":5,"totalOuts":31,"hits":11,"runs":6,"earnedRuns":4,"walks":8,"strikeouts":4,"wildPitches":2,"hitByPitch":1,"totalPitches":146,"strikes":87,"battersFaced":64,"completeGames":0,"innings":10.33,"era":2.32},
+                {"player":"Colton D","team":"Rangers","games":6,"totalOuts":29,"hits":20,"runs":13,"earnedRuns":9,"walks":6,"strikeouts":4,"wildPitches":1,"hitByPitch":0,"totalPitches":139,"strikes":86,"battersFaced":64,"completeGames":0,"innings":9.67,"era":5.59},
+                {"player":"Lev C","team":"Orioles","games":4,"totalOuts":27,"hits":14,"runs":8,"earnedRuns":6,"walks":8,"strikeouts":3,"wildPitches":2,"hitByPitch":0,"totalPitches":124,"strikes":67,"battersFaced":53,"completeGames":0,"innings":9,"era":4},
+                {"player":"Dylan C","team":"Giants","games":4,"totalOuts":26,"hits":6,"runs":3,"earnedRuns":2,"walks":7,"strikeouts":5,"wildPitches":1,"hitByPitch":0,"totalPitches":123,"strikes":78,"battersFaced":50,"completeGames":0,"innings":8.67,"era":1.38},
+                {"player":"Caiden R","team":"Padres","games":5,"totalOuts":25,"hits":9,"runs":6,"earnedRuns":4,"walks":8,"strikeouts":8,"wildPitches":1,"hitByPitch":0,"totalPitches":119,"strikes":64,"battersFaced":51,"completeGames":0,"innings":8.33,"era":2.88},
+                {"player":"Aaron R","team":"Braves","games":4,"totalOuts":25,"hits":13,"runs":8,"earnedRuns":6,"walks":6,"strikeouts":10,"wildPitches":1,"hitByPitch":0,"totalPitches":123,"strikes":76,"battersFaced":54,"completeGames":0,"innings":8.33,"era":4.32},
+                {"player":"Nate C","team":"Giants","games":4,"totalOuts":22,"hits":6,"runs":3,"earnedRuns":2,"walks":7,"strikeouts":8,"wildPitches":1,"hitByPitch":0,"totalPitches":110,"strikes":69,"battersFaced":43,"completeGames":0,"innings":7.33,"era":1.64},
+                {"player":"Noah C","team":"Cubs","games":4,"totalOuts":18,"hits":6,"runs":4,"earnedRuns":3,"walks":7,"strikeouts":14,"wildPitches":1,"hitByPitch":0,"totalPitches":104,"strikes":68,"battersFaced":40,"completeGames":0,"innings":6,"era":3},
+                {"player":"Kai L","team":"Braves","games":3,"totalOuts":17,"hits":16,"runs":10,"earnedRuns":7,"walks":4,"strikeouts":4,"wildPitches":1,"hitByPitch":1,"totalPitches":85,"strikes":48,"battersFaced":51,"completeGames":0,"innings":5.67,"era":7.41},
+                {"player":"Benson P","team":"Giants","games":3,"totalOuts":15,"hits":5,"runs":3,"earnedRuns":2,"walks":4,"strikeouts":6,"wildPitches":0,"hitByPitch":0,"totalPitches":72,"strikes":46,"battersFaced":33,"completeGames":0,"innings":5,"era":2.4},
+                {"player":"Mayer H","team":"Yankees","games":3,"totalOuts":15,"hits":11,"runs":7,"earnedRuns":5,"walks":6,"strikeouts":4,"wildPitches":1,"hitByPitch":0,"totalPitches":78,"strikes":44,"battersFaced":43,"completeGames":0,"innings":5,"era":6},
+                {"player":"Soren K","team":"Dodgers","games":3,"totalOuts":15,"hits":6,"runs":3,"earnedRuns":2,"walks":5,"strikeouts":5,"wildPitches":0,"hitByPitch":0,"totalPitches":73,"strikes":43,"battersFaced":34,"completeGames":0,"innings":5,"era":2.4},
+                {"player":"Orion M","team":"Padres","games":3,"totalOuts":14,"hits":8,"runs":5,"earnedRuns":3,"walks":3,"strikeouts":9,"wildPitches":0,"hitByPitch":0,"totalPitches":66,"strikes":43,"battersFaced":33,"completeGames":0,"innings":4.67,"era":3.86},
+                {"player":"Sebashtien A","team":"Braves","games":2,"totalOuts":12,"hits":2,"runs":1,"earnedRuns":0,"walks":2,"strikeouts":5,"wildPitches":0,"hitByPitch":0,"totalPitches":55,"strikes":35,"battersFaced":21,"completeGames":0,"innings":4,"era":0},
+                {"player":"Nico Y","team":"Braves","games":2,"totalOuts":11,"hits":7,"runs":4,"earnedRuns":3,"walks":3,"strikeouts":3,"wildPitches":1,"hitByPitch":0,"totalPitches":52,"strikes":31,"battersFaced":26,"completeGames":0,"innings":3.67,"era":4.91},
+                {"player":"Cam T","team":"Giants","games":2,"totalOuts":9,"hits":5,"runs":3,"earnedRuns":2,"walks":2,"strikeouts":4,"wildPitches":0,"hitByPitch":0,"totalPitches":45,"strikes":29,"battersFaced":22,"completeGames":0,"innings":3,"era":4},
+                {"player":"Axel B","team":"Cubs","games":2,"totalOuts":8,"hits":3,"runs":2,"earnedRuns":1,"walks":1,"strikeouts":3,"wildPitches":0,"hitByPitch":0,"totalPitches":38,"strikes":25,"battersFaced":17,"completeGames":0,"innings":2.67,"era":2.25},
+                {"player":"Michael K","team":"Padres","games":2,"totalOuts":8,"hits":2,"runs":1,"earnedRuns":0,"walks":1,"strikeouts":4,"wildPitches":0,"hitByPitch":0,"totalPitches":37,"strikes":25,"battersFaced":16,"completeGames":0,"innings":2.67,"era":0}
+            ];
+
+            // Add strike percentage to each player
+            return rawData.map(player => ({
+                ...player,
+                strikePercent: calculateStrikePercent(player.strikes, player.totalPitches)
+            }));
+        }
+        
+        const categories = [
+            { name: 'Innings Pitched', field: 'innings', desc: true, format: (val) => {
+                const wholeInnings = Math.floor(val);
+                const outs = Math.round((val - wholeInnings) * 3);
+                return outs === 0 ? wholeInnings.toString() : `${wholeInnings}.${outs}`;
+            }},
+            { name: 'Earned Run Average (Not Accurate)', field: 'era', desc: false, minInnings: 6, format: (val) => val.toFixed(2) },
+            { name: 'Strikeouts', field: 'strikeouts', desc: true },
+            { name: 'Complete Games', field: 'completeGames', desc: true },
+            { name: 'Total Pitches', field: 'totalPitches', desc: true },
+            { name: 'Strike %', field: 'strikePercent', desc: true, minInnings: 6, format: (val) => val.toFixed(2) + '%' },
+            { name: 'Hits Allowed', field: 'hits', desc: false },
+            { name: 'Runs Allowed', field: 'runs', desc: false },
+            { name: 'Earned Runs', field: 'earnedRuns', desc: false },
+            { name: 'Walks', field: 'walks', desc: false },
+            { name: 'Wild Pitches', field: 'wildPitches', desc: false },
+            { name: 'Hit By Pitch', field: 'hitByPitch', desc: false },
+            { name: 'Batters Faced (Estimated)', field: 'battersFaced', desc: true }
+        ];
+        
+        const topCategories = ['Innings Pitched', 'Earned Run Average', 'Strikeouts', 'Complete Games', 'Total Pitches', 'Strike %'];
+        
+        function createLeaderboard(category, players) {
+            let eligiblePlayers = players;
+            
+            if (category.minInnings) {
+                eligiblePlayers = players.filter(p => p.innings >= category.minInnings);
+            }
+            
+            if (category.name === 'Complete Games') {
+                eligiblePlayers = players.filter(p => p.completeGames > 0);
+            }
+            
+            // For Hit By Pitch, use custom order and data
+            if (category.name === 'Hit By Pitch') {
+                const hitByPitchLeaders = [
+                    {player: "Caleb N", team: "Braves", hitByPitch: 9},
+                    {player: "Jack Bliss", team: "Orioles", hitByPitch: 7},
+                    {player: "Cam T", team: "Yankees", hitByPitch: 5},
+                    {player: "Colton D", team: "Rangers", hitByPitch: 5},
+                    {player: "Jonjon S", team: "Orioles", hitByPitch: 4},
+                    {player: "Jaxon M", team: "Cubs", hitByPitch: 4},
+                    {player: "Zach B", team: "Giants", hitByPitch: 4},
+                    {player: "Zachary C", team: "Giants", hitByPitch: 4},
+                    {player: "Jonathan M", team: "Dodgers", hitByPitch: 3},
+                    {player: "Sam G", team: "Yankees", hitByPitch: 3}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                hitByPitchLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.hitByPitch;
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // For Wild Pitches, use custom order and data
+            if (category.name === 'Wild Pitches') {
+                const wildPitchesLeaders = [
+                    {player: "Caleb N", team: "Braves", wildPitches: 14},
+                    {player: "Nova R", team: "Padres", wildPitches: 12},
+                    {player: "Cade T", team: "Braves", wildPitches: 9},
+                    {player: "Charlie V", team: "Cubs", wildPitches: 9},
+                    {player: "Jack Bliss", team: "Orioles", wildPitches: 9},
+                    {player: "Jonjon S", team: "Orioles", wildPitches: 8},
+                    {player: "Josh M", team: "Padres", wildPitches: 8},
+                    {player: "RJ F", team: "Padres", wildPitches: 7},
+                    {player: "Roland M", team: "Braves", wildPitches: 7},
+                    {player: "Orion M", team: "Padres", wildPitches: 7}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                wildPitchesLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.wildPitches;
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // For Walks, use custom order and data
+            if (category.name === 'Walks') {
+                const walksLeaders = [
+                    {player: "Cade T", team: "Braves", walks: 33},
+                    {player: "Zach B", team: "Giants", walks: 31},
+                    {player: "Caleb N", team: "Braves", walks: 29},
+                    {player: "Bernardo C", team: "Giants", walks: 26},
+                    {player: "Cam T", team: "Yankees", walks: 23},
+                    {player: "Jonathan M", team: "Dodgers", walks: 23},
+                    {player: "Jonjon S", team: "Orioles", walks: 22},
+                    {player: "Hudson P", team: "Yankees", walks: 22},
+                    {player: "Jonah L", team: "Orioles", walks: 21},
+                    {player: "Charlie V", team: "Cubs", walks: 21}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                walksLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.walks;
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // For Earned Runs, use custom order and data
+            if (category.name === 'Earned Runs') {
+                const earnedRunsLeaders = [
+                    {player: "Jack Bliss", team: "Orioles", earnedRuns: 41},
+                    {player: "Jonjon S", team: "Orioles", earnedRuns: 32},
+                    {player: "Caleb N", team: "Braves", earnedRuns: 32},
+                    {player: "Roland M", team: "Braves", earnedRuns: 31},
+                    {player: "Jack Becker", team: "Rangers", earnedRuns: 30},
+                    {player: "Jonah L", team: "Orioles", earnedRuns: 27},
+                    {player: "Dhilan G", team: "Brewers", earnedRuns: 26},
+                    {player: "Cade T", team: "Braves", earnedRuns: 26},
+                    {player: "Josh M", team: "Padres", earnedRuns: 25},
+                    {player: "Matthew O", team: "Rangers", earnedRuns: 24}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                earnedRunsLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.earnedRuns;
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // For Runs Allowed, use custom order and data
+            if (category.name === 'Runs Allowed') {
+                const runsAllowedLeaders = [
+                    {player: "Roland M", team: "Braves", runs: 56},
+                    {player: "Jack Bliss", team: "Orioles", runs: 55},
+                    {player: "Dhilan G", team: "Brewers", runs: 51},
+                    {player: "Jonjon S", team: "Orioles", runs: 50},
+                    {player: "Cam T", team: "Yankees", runs: 41},
+                    {player: "Matthew O", team: "Rangers", runs: 37},
+                    {player: "Cade T", team: "Braves", runs: 36},
+                    {player: "Caleb N", team: "Braves", runs: 35},
+                    {player: "Josh M", team: "Padres", runs: 34},
+                    {player: "Jonah L", team: "Orioles", runs: 34}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                runsAllowedLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.runs;
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // For Hits Allowed, use custom order and data
+            if (category.name === 'Hits Allowed') {
+                const hitsAllowedLeaders = [
+                    {player: "Jonjon S", team: "Orioles", hits: 73},
+                    {player: "Roland M", team: "Braves", hits: 68},
+                    {player: "Jack Bliss", team: "Orioles", hits: 65},
+                    {player: "Dhilan G", team: "Brewers", hits: 58},
+                    {player: "Matthew O", team: "Rangers", hits: 46},
+                    {player: "Josh M", team: "Padres", hits: 45},
+                    {player: "Kenzo W", team: "Brewers", hits: 44},
+                    {player: "Charlie V", team: "Cubs", hits: 39},
+                    {player: "Jack Becker", team: "Rangers", hits: 37},
+                    {player: "Cade T", team: "Braves", hits: 36}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                hitsAllowedLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.hits;
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // For Strike %, only show the top 10 specific players you listed
+            if (category.name === 'Strike %') {
+                const strikePercentLeaders = [
+                    {player: "Kenzo W", team: "Brewers", strikePercent: 70.90},
+                    {player: "Jordan C", team: "Rangers", strikePercent: 70.56},
+                    {player: "Zachary L", team: "Dodgers", strikePercent: 68.46},
+                    {player: "Roland M", team: "Braves", strikePercent: 67.76},
+                    {player: "Matthew O", team: "Rangers", strikePercent: 66.39},
+                    {player: "Dhilan G", team: "Brewers", strikePercent: 65.88},
+                    {player: "Jonjon S", team: "Orioles", strikePercent: 65.56},
+                    {player: "Jaxon M", team: "Cubs", strikePercent: 64.52},
+                    {player: "Noah C", team: "Cubs", strikePercent: 64.41},
+                    {player: "Josh M", team: "Padres", strikePercent: 64.20}
+                ];
+                
+                let html = `
+                    <div class="leaderboard-card">
+                        <div class="category-title">${category.name}</div>
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rk</th>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Stat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                strikePercentLeaders.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    const value = player.strikePercent.toFixed(2) + '%';
+                    
+                    html += `
+                        <tr>
+                            <td class="rank ${rankClass}">${rank}</td>
+                            <td class="player-name">${player.player}</td>
+                            <td class="team">${player.team}</td>
+                            <td class="stat-value">${value}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            const sortedPlayers = eligiblePlayers.sort((a, b) => {
+                if (category.desc) {
+                    return b[category.field] - a[category.field];
+                } else {
+                    return a[category.field] - b[category.field];
+                }
+            });
+            
+            const top10 = sortedPlayers.slice(0, 10);
+            
+            let html = `
+                <div class="leaderboard-card">
+                    <div class="category-title">${category.name}</div>
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rk</th>
+                                <th>Player</th>
+                                <th>Team</th>
+                                <th>Stat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            top10.forEach((player, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                const value = category.format ? category.format(player[category.field]) : player[category.field];
+                
+                html += `
+                    <tr>
+                        <td class="rank ${rankClass}">${rank}</td>
+                        <td class="player-name">${player.player}</td>
+                        <td class="team">${player.team}</td>
+                        <td class="stat-value">${value}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        function renderLeaderboards(players, showAll = true) {
+            const container = document.getElementById('leaderboards');
+            
+            const categoriesToShow = showAll ? categories : categories.filter(cat => topCategories.includes(cat.name));
+            
+            let html = '';
+            categoriesToShow.forEach(category => {
+                html += createLeaderboard(category, players);
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function showAllCategories() {
+            const players = getStaticPlayerData();
+            renderLeaderboards(players, true);
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        function showTopCategories() {
+            const players = getStaticPlayerData();
+            renderLeaderboards(players, false);
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        
+        // Initialize the leaderboards
+        document.addEventListener('DOMContentLoaded', function() {
+            const players = getStaticPlayerData();
+            renderLeaderboards(players, true);
+        });
+    </script>
+</body>
+</html>
